@@ -4,7 +4,7 @@ import yaml
 from astropy.io import fits
 from astropy.wcs import WCS
 from photutils import CircularAperture, aperture_photometry
-from psf import generate_empirical_psf, match_psf
+from psf import generate_empirical_psf, match_psf, apply_kernel
 from photometry import perform_aperture_photometry, correct_photometry
 from detection import detect_sources, generate_segmentation_map, identify_star_candidates
 from utils import read_image, save_catalog
@@ -21,13 +21,19 @@ def main():
 
     # Source detection
     detection_params = config['source_detection']
-    sources, segmentation_map = detect_sources(images['F444W'], detection_params)
+    sources, bkg = detect_sources(images['F444W'], detection_params)
+
+    # Generate segmentation map
+    segmentation_map = generate_segmentation_map(images['F444W'], sources)
+
+    # Identify star candidates
+    star_candidates = identify_star_candidates(sources)
 
     # PSF homogenization
-    target_psf = generate_empirical_psf(images['F444W'], sources)
+    target_psf = generate_empirical_psf(images['F444W'], star_candidates)
     for band in images:
         if band != 'F444W':
-            psf = generate_empirical_psf(images[band], sources)
+            psf = generate_empirical_psf(images[band], star_candidates)
             kernel = match_psf(psf, target_psf, config['psf_homogenization']['regularization_parameter'])
             images[band] = apply_kernel(images[band], kernel)
 
