@@ -7,7 +7,7 @@ from photutils import CircularAperture, aperture_photometry
 from psf import generate_empirical_psf, match_psf, apply_kernel
 from photometry import perform_aperture_photometry, correct_photometry
 from detection import detect_sources, generate_segmentation_map, identify_star_candidates
-from utils import read_image, save_catalog
+from utils import read_image, save_catalog, process_image
 
 def main():
     """
@@ -17,17 +17,24 @@ def main():
     with open('config.yaml', 'r') as file:
         config = yaml.safe_load(file)
 
-    # Read images
+    # Read images and weight images
     images = {}
+    weights = {}
     for band in ['F115W', 'F150W', 'F200W', 'F277W', 'F356W', 'F410M', 'F444W']:
         images[band] = read_image(f'data/{band}.fits')
+        weights[band] = read_image(f'data/{band}_weight.fits')
 
-    # Source detection
+    # Process images (background subtraction)
+    for band in images:
+        images[band] = process_image(images[band])
+
+    # Source detection on coadded image
+    coadded_image = (images['F277W'] * weights['F277W'] + images['F356W'] * weights['F356W'] + images['F444W'] * weights['F444W']) / (weights['F277W'] + weights['F356W'] + weights['F444W'])
     detection_params = config['source_detection']
-    sources, bkg = detect_sources(images['F444W'], detection_params)
+    sources, bkg = detect_sources(coadded_image, detection_params)
 
     # Generate segmentation map
-    segmentation_map = generate_segmentation_map(images['F444W'], sources)
+    segmentation_map = generate_segmentation_map(coadded_image, sources)
 
     # Identify star candidates
     star_candidates = identify_star_candidates(sources)
