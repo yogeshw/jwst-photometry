@@ -1,6 +1,7 @@
 import numpy as np
 import sep
 import yaml
+import logging
 from astropy.io import fits
 from astropy.wcs import WCS
 from aperpy import CircularAperture, aperture_photometry
@@ -21,8 +22,12 @@ def main():
     images = {}
     weights = {}
     for band in ['F115W', 'F150W', 'F200W', 'F277W', 'F356W', 'F410M', 'F444W']:
-        images[band] = read_image(f'data/{band}.fits')
-        weights[band] = read_image(f'data/{band}_weight.fits')
+        try:
+            images[band] = read_image(config['images'][band])
+            weights[band] = read_image(config['images'][f'{band}_weight'])
+        except FileNotFoundError as e:
+            logging.error(f"File not found: {e}")
+            return
 
     # Process images (background subtraction)
     for band in images:

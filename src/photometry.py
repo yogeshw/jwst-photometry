@@ -3,6 +3,7 @@ import sep
 from astropy.io import fits
 from astropy.wcs import WCS
 from aperpy import CircularAperture, aperture_photometry
+import logging
 
 def perform_aperture_photometry(image, sources, photometry_params):
     """
@@ -16,8 +17,12 @@ def perform_aperture_photometry(image, sources, photometry_params):
     Returns:
     phot_table (Table): Aperture photometry results.
     """
-    apertures = [CircularAperture((source['x'], source['y']), r=ap/2) for source in sources for ap in photometry_params['apertures']]
-    phot_table = aperture_photometry(image, apertures)
+    try:
+        apertures = [CircularAperture((source['x'], source['y']), r=ap/2) for source in sources for ap in photometry_params['apertures']]
+        phot_table = aperture_photometry(image, apertures)
+    except Exception as e:
+        logging.error(f"Error performing aperture photometry: {e}")
+        phot_table = None
     return phot_table
 
 def correct_photometry(photometry_results, correction_params):
@@ -33,15 +38,19 @@ def correct_photometry(photometry_results, correction_params):
     """
     corrected_results = {}
     for band, phot_table in photometry_results.items():
-        # Apply corrections to photometry
-        if correction_params['f444w_curve_of_growth']:
-            phot_table['flux'] /= correction_params['f444w_curve_of_growth']
-        
-        # Derive photometric uncertainties
-        local_noise = np.sqrt(1 / np.median(phot_table['weight'], axis=1))
-        phot_table['flux_err'] = phot_table['flux'] * local_noise
-        
-        corrected_results[band] = phot_table
+        try:
+            # Apply corrections to photometry
+            if correction_params['f444w_curve_of_growth']:
+                phot_table['flux'] /= correction_params['f444w_curve_of_growth']
+            
+            # Derive photometric uncertainties
+            local_noise = np.sqrt(1 / np.median(phot_table['weight'], axis=1))
+            phot_table['flux_err'] = phot_table['flux'] * local_noise
+            
+            corrected_results[band] = phot_table
+        except Exception as e:
+            logging.error(f"Error correcting photometry for band {band}: {e}")
+            corrected_results[band] = None
     return corrected_results
 
 def derive_photometric_uncertainties(image, sources, correction_params):
@@ -56,20 +65,22 @@ def derive_photometric_uncertainties(image, sources, correction_params):
     Returns:
     sources (list): Sources with updated photometric uncertainties.
     """
-    bkg = sep.Background(image)
-    data_sub = image - bkg
-    noise_apertures = []
-    for _ in range(correction_params['num_background_apertures']):
-        x = np.random.randint(0, image.shape[1])
-        y = np.random.randint(0, image.shape[0])
-        noise_apertures.append(CircularAperture((x, y), r=correction_params['local_noise_box_size']/2))
-    
-    noise_phot_table = aperture_photometry(data_sub, noise_apertures)
-    noise_fluxes = noise_phot_table['aperture_sum']
-    noise_fluxes = noise_fluxes[np.abs(noise_fluxes) < correction_params['outlier_sigma'] * np.std(noise_fluxes)]
-    noise_std = np.std(noise_fluxes)
-    
-    for source in sources:
-        source['flux_err'] = noise_std * np.sqrt(1 / np.median(source['weight'], axis=1))
-    
+    try:
+        bkg = sep.Background(image)
+        data_sub = image - bkg
+        noise_apertures = []
+        for _ in range(correction_params['num_background_apertures']):
+            x = np.random.randint(0, image.shape[1])
+            y = np.random.randint(0, image.shape[0])
+            noise_apertures.append(CircularAperture((x, y), r=correction_params['local_noise_box_size']/2))
+        
+        noise_phot_table = aperture_photometry(data_sub, noise_apertures)
+        noise_fluxes = noise_phot_table['aperture_sum']
+        noise_fluxes = noise_fluxes[np.abs(noise_fluxes) < correction_params['outlier_sigma'] * np.std(noise_fluxes)]
+        noise_std = np.std(noise_fluxes)
+        
+        for source in sources:
+            source['flux_err'] = noise_std * np.sqrt(1 / np.median(source['weight'], axis=1))
+    except Exception as e:
+        logging.error(f"Error deriving photometric uncertainties: {e}")
     return sources

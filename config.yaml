@@ -27,3 +27,19 @@ photometric_corrections:
 output:
   catalog_format: fits
   output_directory: ./output
+
+images:
+  F115W: data/F115W.fits
+  F115W_weight: data/F115W_weight.fits
+  F150W: data/F150W.fits
+  F150W_weight: data/F150W_weight.fits
+  F200W: data/F200W.fits
+  F200W_weight: data/F200W_weight.fits
+  F277W: data/F277W.fits
+  F277W_weight: data/F277W_weight.fits
+  F356W: data/F356W.fits
+  F356W_weight: data/F356W_weight.fits
+  F410M: data/F410M.fits
+  F410M_weight: data/F410M_weight.fits
+  F444W: data/F444W.fits
+  F444W_weight: data/F444W_weight.fits
