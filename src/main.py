@@ -3,7 +3,7 @@ import sep
 import yaml
 from astropy.io import fits
 from astropy.wcs import WCS
-from photutils import CircularAperture, aperture_photometry
+from aperpy import CircularAperture, aperture_photometry
 from psf import generate_empirical_psf, match_psf, apply_kernel
 from photometry import perform_aperture_photometry, correct_photometry
 from detection import detect_sources, generate_segmentation_map, identify_star_candidates

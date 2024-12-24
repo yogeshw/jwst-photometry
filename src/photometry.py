@@ -2,7 +2,7 @@ import numpy as np
 import sep
 from astropy.io import fits
 from astropy.wcs import WCS
-from photutils import CircularAperture, aperture_photometry
+from aperpy import CircularAperture, aperture_photometry
 
 def perform_aperture_photometry(image, sources, photometry_params):
     """

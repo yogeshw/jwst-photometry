@@ -64,3 +64,32 @@ def identify_star_candidates(objects, mag_limit=24, size_limit=2.8):
             star_candidates.append(obj)
 
     return star_candidates
+
+def identify_star_candidates_advanced(objects, f200w_image, f160w_image, mag_limit=25.0, size_ratio_limits=(1.5, 1.65), f160w_mag_limit=23.0):
+    """
+    Identify star candidates using traditional methods as described in Skelton et al. (2014).
+
+    Parameters:
+    objects (ndarray): Array of detected objects.
+    f200w_image (HDUList): F200W image data.
+    f160w_image (HDUList): F160W image data.
+    mag_limit (float): Magnitude limit for star candidates in F200W.
+    size_ratio_limits (tuple): Size ratio limits for star candidates in F160W.
+    f160w_mag_limit (float): Magnitude limit for star candidates in F160W.
+
+    Returns:
+    star_candidates (list): List of star candidates.
+    """
+    star_candidates = []
+
+    # Identify stars in F200W
+    for obj in objects:
+        if obj['mag'] < mag_limit and obj['flux_ratio'] > size_ratio_limits[0] and obj['flux_ratio'] < size_ratio_limits[1]:
+            star_candidates.append(obj)
+
+    # Identify stars in F160W
+    for obj in objects:
+        if obj['mag'] < f160w_mag_limit and obj['flux_ratio'] > size_ratio_limits[0] and obj['flux_ratio'] < size_ratio_limits[1]:
+            star_candidates.append(obj)
+
+    return star_candidates
