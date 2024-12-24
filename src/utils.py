@@ -23,11 +23,13 @@ def save_catalog(catalog, format, output_directory):
 
     Parameters:
     catalog (Table): Photometry catalog.
-    format (str): Output format (e.g., 'fits').
+    format (str): Output format (e.g., 'fits' or 'csv').
     output_directory (str): Directory to save the catalog.
     """
     if format == 'fits':
         save_catalog_fits(catalog, output_directory)
+    elif format == 'csv':
+        save_catalog_csv(catalog, output_directory)
     else:
         raise ValueError(f"Unsupported catalog format: {format}")
 
@@ -41,6 +43,16 @@ def save_catalog_fits(catalog, output_directory):
     """
     hdu = fits.BinTableHDU.from_columns(catalog)
     hdu.writeto(f"{output_directory}/photometry_catalog.fits", overwrite=True)
+
+def save_catalog_csv(catalog, output_directory):
+    """
+    Save the photometry catalog in CSV format.
+
+    Parameters:
+    catalog (Table): Photometry catalog.
+    output_directory (str): Directory to save the catalog.
+    """
+    catalog.write(f"{output_directory}/photometry_catalog.csv", format='csv', overwrite=True)
 
 def load_config(config_file):
     """
