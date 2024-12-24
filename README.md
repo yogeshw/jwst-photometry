@@ -4,7 +4,7 @@ This project provides a Python script to carry out JWST photometry in the follow
 
 ## Purpose
 
-The purpose of this project is to provide a comprehensive tool for performing photometry on JWST images, ensuring consistent photometric measurements across all bands, and deriving accurate source colors, redshifts, and physical parameters.
+The purpose of this project is to provide a comprehensive tool for performing photometry on JWST images, ensuring consistent photometric measurements across all bands, thus enabling accurate source colors, redshifts, and physical parameters.
 
 ## How to Run the Script
 
