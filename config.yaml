@@ -1,0 +1,29 @@
+# User input configuration for JWST photometry script
+
+source_detection:
+  kernel: 3.5  # pixel FWHM Gaussian
+  minarea: 3  # pixels
+  thresh: 1.2  # σ
+  deblend_nthresh: 32
+  deblend_cont: 0.0001
+  clean: N
+
+psf_homogenization:
+  target_psf: F444W
+  regularization_parameter: 0.003  # for Pypher
+
+aperture_photometry:
+  apertures: [0.32, 0.48, 0.70, 1.00, 1.40]  # diameter in arcseconds
+  elliptical_kron_factor: 2.5
+  min_kron_factor: 1.0
+
+photometric_corrections:
+  f444w_curve_of_growth: true
+  local_noise_box_size: 9  # pixels
+  num_background_apertures: 10000
+  outlier_sigma: 5
+  use_circle_flag: true
+
+output:
+  catalog_format: fits
+  output_directory: ./output
