@@ -1,2 +1,60 @@
-% This is a userguide for the code to do JWST photometry
+\documentclass{article}
+\title{JWST Photometry User Guide}
+\author{Yogesh G Wadadekar}
+\date{\today}
+\begin{document}
+\maketitle
+
+\section{Introduction and Overview}
+This user guide provides instructions for using the JWST Photometry script, which performs photometry on images from the James Webb Space Telescope (JWST). The script supports multiple bands, including F115W, F150W, F200W, F277W, F356W, F410M, and F444W. It includes functionalities for source detection, PSF homogenization, aperture photometry, and photometric corrections.
+
+
+\section{Purpose}
+The purpose of this project is to provide a comprehensive tool for performing photometry on JWST images, ensuring consistent photometric measurements across all bands, thus enabling accurate source detection and analysis.
+
+\section{Installation Instructions}
+To install the necessary dependencies, follow these steps:
+\begin{enumerate}
+    \item Clone the repository:
+    \begin{verbatim}
+    git clone https://github.com/yogeshw/jwst-photometry.git
+    \end{verbatim}
+    \item Navigate to the project directory:
+    \begin{verbatim}
+    cd jwst-photometry
+    \end{verbatim}
+    \item Install the required dependencies:
+    \begin{verbatim}
+    pip install -r requirements.txt
+    \end{verbatim}
+\end{enumerate}
+
+\section{Running the Script}
+To run the main script, modify the \texttt{config.yaml} file to specify the parameters for source detection, PSF homogenization, aperture photometry, and photometric corrections. Then, execute the script from the command line:
+\begin{verbatim}
+python src/main.py
+\end{verbatim}
+
+\section{Modifying the YAML File}
+The \texttt{config.yaml} file contains all the user inputs required for the script. Users should modify this file to set the desired parameters for their specific use case. The YAML file includes parameters for:
+\begin{itemize}
+    \item Source detection
+    \item PSF homogenization
+    \item Aperture photometry
+    \item Photometric corrections
+\end{itemize}
+
+\section{Recent Updates/Changelog}
+Here are some of the recent updates to the project:
+\begin{itemize}
+    \item Added logging for error handling and updated image reading from \texttt{config.yaml}.
+    \item Switched to \texttt{aperpy} for aperture photometry.
+    \item Updated \texttt{src/main.py} to process images and perform source detection on coadded image.
+    \item Added informative docstrings for all functions in the \texttt{src} directory.
+\end{itemize}
+For more details, please refer to the commit history on [GitHub](https://github.com/yogeshw/jwst-photometry/commits).
+\end{document}
+
+
+
 
