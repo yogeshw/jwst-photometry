@@ -10,6 +10,9 @@ from detection import detect_sources, generate_segmentation_map, identify_star_c
 from utils import read_image, save_catalog
 
 def main():
+    """
+    Main function to carry out JWST photometry, including source detection, PSF homogenization, aperture photometry, and photometric corrections.
+    """
     # Load user inputs from config.yaml
     with open('config.yaml', 'r') as file:
         config = yaml.safe_load(file)
