@@ -1,0 +1,63 @@
+{
+  "steps_completed": [
+    "load_images",
+    "process_images",
+    "run_source_detection",
+    "run_psf_homogenization",
+    "run_aperture_photometry",
+    "apply_photometric_corrections",
+    "create_final_catalog",
+    "save_outputs"
+  ],
+  "metrics": [
+    {
+      "name": "load_images",
+      "started_at": 1754636268.030425,
+      "ended_at": 1754636268.0405414,
+      "duration_s": 0.010116338729858398
+    },
+    {
+      "name": "process_images",
+      "started_at": 1754636268.0408125,
+      "ended_at": 1754636268.0509229,
+      "duration_s": 0.01011037826538086
+    },
+    {
+      "name": "run_source_detection",
+      "started_at": 1754636268.051238,
+      "ended_at": 1754636268.0613492,
+      "duration_s": 0.010111093521118164
+    },
+    {
+      "name": "run_psf_homogenization",
+      "started_at": 1754636268.0616674,
+      "ended_at": 1754636268.0717866,
+      "duration_s": 0.010119199752807617
+    },
+    {
+      "name": "run_aperture_photometry",
+      "started_at": 1754636268.0721989,
+      "ended_at": 1754636268.0822911,
+      "duration_s": 0.01009225845336914
+    },
+    {
+      "name": "apply_photometric_corrections",
+      "started_at": 1754636268.0826082,
+      "ended_at": 1754636268.0927165,
+      "duration_s": 0.010108232498168945
+    },
+    {
+      "name": "create_final_catalog",
+      "started_at": 1754636268.0930927,
+      "ended_at": 1754636268.1032062,
+      "duration_s": 0.01011347770690918
+    },
+    {
+      "name": "save_outputs",
+      "started_at": 1754636268.1037023,
+      "ended_at": 1754636268.1138184,
+      "duration_s": 0.010116100311279297
+    }
+  ],
+  "last_output_catalog": null
+}

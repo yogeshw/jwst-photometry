@@ -12,6 +12,7 @@ import logging
 from pathlib import Path
 from typing import Dict, Any, Optional
 import traceback
+import time
 
 import numpy as np
 from astropy.table import Table
@@ -19,6 +20,8 @@ from astropy.io import fits
 
 # Import enhanced pipeline modules
 from config_manager import ConfigManager, load_config
+from parallel_processing import ParallelProcessor
+from cache import CacheManager, CacheConfig, stable_hash
 from jwst_data_handler import JWSTDataHandler
 from utils import (
     setup_logging, timing_context, memory_monitor,
@@ -79,7 +82,7 @@ class JWSTPhotometryPipeline:
             self.logger.error(f"Failed to load configuration: {e}")
             raise ConfigurationError(f"Configuration loading failed: {e}")
         
-        # Initialize data handler
+    # Initialize data handler
         self.data_handler = JWSTDataHandler()
         
         # Initialize storage for pipeline data
@@ -96,6 +99,15 @@ class JWSTPhotometryPipeline:
         self.star_candidates = None
         self.photometry_results = {}
         self.final_catalog = None
+
+        # Caching (Phase 7: advanced caching strategies)
+        try:
+            output_dir = Path(self.config_manager.get_output_config().output_directory)
+        except Exception:
+            output_dir = Path('.')
+        cache_base = output_dir / '.cache'
+        self.cache_detection = CacheManager(CacheConfig(cache_base, namespace='detection', enabled=True))
+        self.cache_photometry = CacheManager(CacheConfig(cache_base, namespace='photometry', enabled=True))
         
         self.logger.info(f"Pipeline initialized - Memory usage: {get_memory_usage():.1f} MB")
     
@@ -261,6 +273,20 @@ class JWSTPhotometryPipeline:
         
         self.logger.info(f"Using bands for detection: {detection_bands}")
         
+        # Cache key uses input image identities and bands selected
+        try:
+            # Prefer file paths to avoid hashing large arrays
+            filter_configs = self.config_manager.config['filters']
+            band_paths = {b: (filter_configs[b].image_path, filter_configs[b].weight_path)
+                          for b in detection_bands if b in filter_configs}
+            cache_key = f"detimg|{stable_hash(band_paths)}"
+            cached = self.cache_detection.get(cache_key)
+            if cached is not None:
+                self.logger.info("Loaded detection image from cache")
+                return cached
+        except Exception:
+            cache_key = None
+
         # Create weighted combination
         combined_image = None
         total_weight = 0
@@ -287,6 +313,13 @@ class JWSTPhotometryPipeline:
         detection_image = combined_image / np.maximum(total_weight, 1e-10)
         
         self.logger.info(f"Created detection image with shape {detection_image.shape}")
+
+        # Store in cache
+        if cache_key:
+            try:
+                self.cache_detection.set(cache_key, detection_image)
+            except Exception:
+                pass
         return detection_image
     
     def run_source_detection(self) -> None:
@@ -405,40 +438,75 @@ class JWSTPhotometryPipeline:
                 
                 # Initialize enhanced aperture photometry processor
                 aperture_processor = EnhancedAperturePhotometry(aperture_config)
-                
-                # Perform photometry for each band
-                for band in self.images:
-                    self.logger.debug(f"Performing enhanced photometry for {band}")
-                    
-                    # Prepare inputs
-                    image = self.images[band]
-                    background_map = self.background_maps.get(band)
-                    rms_map = self.error_arrays.get(band)
-                    
-                    # Convert sources to structured array format
-                    sources_array = self._convert_sources_to_array(self.sources)
-                    
-                    # Perform enhanced aperture photometry
+
+                # Prepare common inputs
+                sources_array = self._convert_sources_to_array(self.sources)
+                output_config = self.config_manager.get_output_config()
+                output_dir = Path(output_config.output_directory)
+
+                # Parallel per-band processing (Phase 7 integration)
+                processor = ParallelProcessor(max_workers=None, use_processes=False)
+
+                def _process_band(band_name: str):
+                    # Cache key built from image file path and relevant config
+                    try:
+                        fcfg = self.config_manager.config['filters'].get(band_name)
+                        key_meta = {
+                            'band': band_name,
+                            'image_path': getattr(fcfg, 'image_path', None),
+                            'weights': getattr(fcfg, 'weight_path', None),
+                            'apertures': aperture_config.circular_apertures,
+                            'kron': aperture_config.use_kron_apertures,
+                        }
+                        cache_key = f"phot|{stable_hash(key_meta)}"
+                        cached = self.cache_photometry.get(cache_key)
+                        if cached is not None:
+                            return band_name, cached
+                    except Exception:
+                        cache_key = None
+
+                    image = self.images[band_name]
+                    background_map = self.background_maps.get(band_name)
+                    rms_map = self.error_arrays.get(band_name)
+                    wcs = self.metadata[band_name].wcs if hasattr(self.metadata[band_name], 'wcs') else None
+
                     photometry_results = aperture_processor.perform_aperture_photometry(
                         image=image,
                         sources=sources_array,
                         background_map=background_map,
                         rms_map=rms_map,
                         segmentation_map=self.segmentation_map,
-                        psf_model=None,  # Will be added in PSF photometry phase
-                        wcs=self.metadata[band].wcs if hasattr(self.metadata[band], 'wcs') else None
+                        psf_model=None,
+                        wcs=wcs
                     )
-                    
-                    self.photometry_results[band] = photometry_results
-                    
-                    # Create diagnostic plots
+
+                    # Diagnostics
                     if aperture_config.create_diagnostic_plots:
-                        output_config = self.config_manager.get_output_config()
-                        output_dir = Path(output_config.output_directory)
-                        plot_path = output_dir / f'aperture_photometry_diagnostics_{band}.png'
-                        aperture_processor.plot_photometry_diagnostics(
-                            photometry_results, str(plot_path)
-                        )
+                        plot_path = output_dir / f'aperture_photometry_diagnostics_{band_name}.png'
+                        aperture_processor.plot_photometry_diagnostics(photometry_results, str(plot_path))
+
+                    # Cache
+                    if cache_key:
+                        try:
+                            self.cache_photometry.set(cache_key, photometry_results)
+                        except Exception:
+                            pass
+
+                    return band_name, photometry_results
+
+                bands = list(self.images.keys())
+                # Execute in parallel threads
+                results = processor.process_chunks_parallel(
+                    chunks=[{'band': b} for b in bands],
+                    processing_function=lambda chunk: _process_band(chunk['band'])
+                )
+
+                # Collect results preserving band mapping
+                for item in results:
+                    if item is None:
+                        continue
+                    band_name, phot_res = item
+                    self.photometry_results[band_name] = phot_res
                 
                 self.logger.info(f"Enhanced aperture photometry completed for {len(self.photometry_results)} bands")
                 

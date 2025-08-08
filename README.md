@@ -25,3 +25,8 @@ The `config.yaml` file contains all the user inputs required for the script. Use
 - Photometric corrections
 
 For detailed instructions on how to install dependencies, run, and configure the script, please refer to the separate LaTex user guide.
+
+## Phase 7 Additions: Orchestrator and Caching
+
+- Pipeline orchestrator (`src/pipeline.py`) provides checkpoint/resume, batch processing, and basic monitoring. It supports a dry-run mode for test environments.
+- Disk cache (`src/cache.py`) caches the combined detection image and per-band photometry to speed up repeated runs.
